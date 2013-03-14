@@ -32,17 +32,6 @@ module Ripple
       extend ActiveSupport::Concern
 
       module ClassMethods
-
-        # Set the prefix for the datatype.
-        #
-        def prefix=(prefix)
-          @prefix = prefix
-        end
-
-        def prefix
-          @prefix
-        end
-
         # Retrieve single or multiple documents from Riak.
         # @overload find(key)
         #   Find a single document.
@@ -77,6 +66,20 @@ module Ripple
           found
         end
 
+        # Find the first object using the first key in the
+        # bucket's keys using find. You should not expect to
+        # actually get the first object you added to the bucket.
+        # This is just a convenience method.
+        def first
+          find(bucket.keys.first)
+        end
+
+        # Find the first object using the first key in the
+        # bucket's keys using find!
+        def first!
+          find!(bucket.keys.first)
+        end
+
         # Find all documents in the Document's bucket and return them.
         # @overload list()
         #   Get all documents and return them in an array.
@@ -92,7 +95,6 @@ module Ripple
           if block_given?
             bucket.keys do |keys|
               keys.each do |key|
-                next if !self.prefix.nil? && key[0, self.prefix.length] == self.prefix
                 obj = find_one(key)
                 yield obj if obj
               end
@@ -108,11 +110,7 @@ module Ripple
 
         private
         def find_one(key)
-          if self.prefix
-            instantiate(bucket.get("#{prefix}_#{key}", quorums.slice(:r)))
-          else
-            instantiate(bucket.get(key, quorums.slice(:r)))
-          end
+          instantiate(bucket.get(key, quorums.slice(:r)))
         rescue Riak::FailedRequest => fr
           raise fr unless fr.not_found?
         end
