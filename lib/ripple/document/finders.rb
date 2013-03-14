@@ -92,6 +92,7 @@ module Ripple
           if block_given?
             bucket.keys do |keys|
               keys.each do |key|
+                next if !self.prefix.nil? && key[0, self.prefix.length] == self.prefix
                 obj = find_one(key)
                 yield obj if obj
               end
@@ -110,7 +111,7 @@ module Ripple
           if self.prefix
             instantiate(bucket.get("#{prefix}_#{key}", quorums.slice(:r)))
           else
-            instantiate(bucket.get("#{prefix}_#{key}", quorums.slice(:r)))
+            instantiate(bucket.get(key, quorums.slice(:r)))
           end
         rescue Riak::FailedRequest => fr
           raise fr unless fr.not_found?
